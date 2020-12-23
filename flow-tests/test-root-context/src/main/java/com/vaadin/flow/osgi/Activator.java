@@ -33,7 +33,7 @@ import org.osgi.service.http.NamespaceException;
 import org.osgi.service.http.context.ServletContextHelper;
 import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 
-import com.vaadin.flow.server.InitParameters;
+import com.vaadin.flow.server.VaadinServletConfiguration;
 import com.vaadin.flow.uitest.servlet.ProductionModeTimingDataViewTestServlet;
 import com.vaadin.flow.uitest.servlet.ProductionModeViewTestServlet;
 import com.vaadin.flow.uitest.servlet.RouterTestServlet;
@@ -72,6 +72,7 @@ public class Activator {
 
     }
 
+    @VaadinServletConfiguration(productionMode = false)
     private static class FixedViewServlet extends ViewTestServlet {
         @Override
         public void init(ServletConfig servletConfig) throws ServletException {
@@ -83,6 +84,7 @@ public class Activator {
         }
     }
 
+    @VaadinServletConfiguration(productionMode = false)
     private static class FixedRouterServlet extends RouterTestServlet {
         @Override
         public void init(ServletConfig servletConfig) throws ServletException {
@@ -94,6 +96,7 @@ public class Activator {
         }
     }
 
+    @VaadinServletConfiguration(productionMode = true)
     private static class FixedProductionModeViewServlet
             extends ProductionModeViewTestServlet {
 
@@ -107,6 +110,7 @@ public class Activator {
         }
     }
 
+    @VaadinServletConfiguration(productionMode = true)
     private static class FixedProductionModeTimingDataViewServlet
             extends ProductionModeTimingDataViewTestServlet {
         @Override
@@ -125,21 +129,21 @@ public class Activator {
                 .getBundleContext();
 
         context.registerService(Servlet.class, new FixedViewServlet(),
-                createProperties("/view/*", false));
+                createProperties("/view/*"));
 
         context.registerService(Servlet.class, new FixedViewServlet(),
-                createProperties("/context/*", false));
+                createProperties("/context/*"));
 
         context.registerService(Servlet.class, new FixedRouterServlet(),
-                createProperties("/new-router-session/*", false));
+                createProperties("/new-router-session/*"));
 
         context.registerService(Servlet.class,
                 new FixedProductionModeViewServlet(),
-                createProperties("/view-production/*", true));
+                createProperties("/view-production/*"));
 
         context.registerService(Servlet.class,
                 new FixedProductionModeTimingDataViewServlet(),
-                createProperties("/view-production-timing/*", true));
+                createProperties("/view-production-timing/*"));
 
         registerPlainJsResource(context);
 
@@ -171,8 +175,7 @@ public class Activator {
 
     private void registerCustomContextServlet(BundleContext context,
             String contextName) {
-        Hashtable<String, Object> properties = createProperties("/view/*",
-                false);
+        Hashtable<String, Object> properties = createProperties("/view/*");
         properties.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT,
                 "(" + HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_NAME + "="
                         + contextName + ")");
@@ -180,13 +183,8 @@ public class Activator {
                 properties);
     }
 
-    private Hashtable<String, Object> createProperties(String mapping,
-            Boolean isProductionMode) {
+    private Hashtable<String, Object> createProperties(String mapping) {
         Hashtable<String, Object> properties = new Hashtable<>();
-        properties.put(
-                HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_INIT_PARAM_PREFIX
-                        + InitParameters.SERVLET_PARAMETER_PRODUCTION_MODE,
-                isProductionMode.toString());
         properties.put(
                 HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_ASYNC_SUPPORTED,
                 true);

@@ -20,7 +20,6 @@ import javax.servlet.ServletContext;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.ApplicationContext;
@@ -33,11 +32,10 @@ import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import com.vaadin.flow.server.connect.EndpointNameChecker;
 import com.vaadin.flow.server.connect.ExplicitNullableTypeChecker;
+import com.vaadin.flow.server.connect.EndpointNameChecker;
 import com.vaadin.flow.server.connect.VaadinConnectController;
 import com.vaadin.flow.server.connect.auth.VaadinConnectAccessChecker;
-import com.vaadin.flow.server.startup.ApplicationConfiguration;
 
 import static org.mockito.Mockito.mock;
 
@@ -51,18 +49,14 @@ public abstract class BaseTypeConversionTest {
     @Autowired
     private ApplicationContext applicationContext;
 
-    private ApplicationConfiguration appConfig;
-
     @Before
     public void setUp() {
-        appConfig = Mockito.mock(ApplicationConfiguration.class);
-
-        mockMvc = MockMvcBuilders
-                .standaloneSetup(new VaadinConnectController(null,
-                        mock(VaadinConnectAccessChecker.class),
-                        mock(EndpointNameChecker.class),
-                        mock(ExplicitNullableTypeChecker.class),
-                        applicationContext, mockServletContext()))
+        mockMvc = MockMvcBuilders.standaloneSetup(new VaadinConnectController(
+                null, mock(VaadinConnectAccessChecker.class),
+                mock(EndpointNameChecker.class),
+                mock(ExplicitNullableTypeChecker.class),
+                applicationContext,
+                mock(ServletContext.class)))
                 .build();
         Assert.assertNotEquals(null, applicationContext);
     }
@@ -100,13 +94,5 @@ public abstract class BaseTypeConversionTest {
                 .accept(MediaType.APPLICATION_JSON_UTF8_VALUE).content(body)
                 .contentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
         return mockMvc.perform(requestBuilder).andReturn().getResponse();
-    }
-
-    private ServletContext mockServletContext() {
-        ServletContext context = Mockito.mock(ServletContext.class);
-        Mockito.when(
-                context.getAttribute(ApplicationConfiguration.class.getName()))
-                .thenReturn(appConfig);
-        return context;
     }
 }

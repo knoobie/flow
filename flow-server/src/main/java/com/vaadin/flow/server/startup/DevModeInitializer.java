@@ -19,6 +19,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
 import javax.servlet.annotation.HandlesTypes;
 import javax.servlet.annotation.WebListener;
 
@@ -36,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -64,6 +66,7 @@ import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.di.Lookup;
+import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.router.HasErrorParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.Constants;
@@ -82,6 +85,7 @@ import com.vaadin.flow.server.frontend.NodeTasks;
 import com.vaadin.flow.server.frontend.NodeTasks.Builder;
 import com.vaadin.flow.server.frontend.scanner.ClassFinder;
 import com.vaadin.flow.server.frontend.scanner.ClassFinder.DefaultClassFinder;
+import com.vaadin.flow.server.startup.ServletDeployer.StubServletConfig;
 import com.vaadin.flow.theme.NoTheme;
 import com.vaadin.flow.theme.Theme;
 
@@ -199,7 +203,28 @@ public class DevModeInitializer
     @Override
     public void process(Set<Class<?>> classes, ServletContext context)
             throws ServletException {
-        initDevModeHandler(classes, context);
+        Collection<? extends ServletRegistration> registrations = context
+                .getServletRegistrations().values();
+
+        ServletRegistration vaadinServletRegistration = null;
+        for (ServletRegistration registration : registrations) {
+            if (registration.getClassName() != null
+                    && isVaadinServletSubClass(registration.getClassName())) {
+                vaadinServletRegistration = registration;
+                break;
+            }
+        }
+
+        DeploymentConfiguration config;
+        if (vaadinServletRegistration != null) {
+            config = StubServletConfig.createDeploymentConfiguration(context,
+                    vaadinServletRegistration, VaadinServlet.class);
+        } else {
+            config = StubServletConfig.createDeploymentConfiguration(context,
+                    VaadinServlet.class);
+        }
+
+        initDevModeHandler(classes, context, config);
 
         setDevModeStarted(context);
     }
@@ -228,16 +253,15 @@ public class DevModeInitializer
      *            classes to check for npm- and js modules
      * @param context
      *            servlet context we are running in
+     * @param config
+     *            deployment configuration
      *
      * @throws ServletException
      *             if dev mode can't be initialized
      */
     public static void initDevModeHandler(Set<Class<?>> classes,
-            ServletContext context) throws ServletException {
-        VaadinContext vaadinContext = new VaadinServletContext(context);
-
-        ApplicationConfiguration config = ApplicationConfiguration
-                .get(vaadinContext);
+            ServletContext context, DeploymentConfiguration config)
+            throws ServletException {
         if (config.isProductionMode()) {
             log().debug("Skipping DEV MODE because PRODUCTION MODE is set.");
             return;
@@ -262,14 +286,13 @@ public class DevModeInitializer
         File flowResourcesFolder = new File(baseDir,
                 DEFAULT_FLOW_RESOURCES_FOLDER);
 
-        Lookup lookupFromServletConetext = new VaadinServletContext(context)
-                .getAttribute(Lookup.class);
-        Lookup lookupForClassFinder = Lookup.of(new DevModeClassFinder(classes),
-                ClassFinder.class);
-        Lookup lookup = Lookup.compose(lookupForClassFinder,
-                lookupFromServletConetext);
-        Builder builder = new NodeTasks.Builder(lookup, new File(baseDir),
-                new File(generatedDir), new File(frontendFolder));
+        VaadinContext vaadinContext = new VaadinServletContext(context);
+        Lookup lookupFromServletConetext = new VaadinServletContext(context).getAttribute(Lookup.class);
+        Lookup lookupForClassFinder = Lookup.of(new DevModeClassFinder(classes), ClassFinder.class);
+        Lookup lookup = Lookup.compose(lookupForClassFinder, lookupFromServletConetext);
+        Builder builder = new NodeTasks.Builder(lookup,
+                new File(baseDir), new File(generatedDir),
+                new File(frontendFolder));
 
         log().info("Starting dev-mode updaters in {} folder.",
                 builder.npmFolder);
@@ -374,7 +397,7 @@ public class DevModeInitializer
 
         DevModeHandler.start(
                 Lookup.compose(lookup,
-                        Lookup.of(config, ApplicationConfiguration.class)),
+                        Lookup.of(config, DeploymentConfiguration.class)),
                 builder.npmFolder, nodeTasksFuture);
     }
 
@@ -388,10 +411,9 @@ public class DevModeInitializer
     /**
      * Shows whether {@link DevModeHandler} has been already started or not.
      *
-     * @param servletContext
-     *            The servlet context, not <code>null</code>
-     * @return <code>true</code> if {@link DevModeHandler} has already been
-     *         started, <code>false</code> - otherwise
+     * @param servletContext The servlet context, not <code>null</code>
+     * @return <code>true</code> if {@link DevModeHandler} has already been started,
+     *         <code>false</code> - otherwise
      */
     public static boolean isDevModeAlreadyStarted(
             ServletContext servletContext) {

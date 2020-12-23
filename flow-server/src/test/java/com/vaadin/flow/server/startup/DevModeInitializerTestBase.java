@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 import com.vaadin.flow.di.Lookup;
 import com.vaadin.flow.di.ResourceProvider;
 import com.vaadin.flow.server.DevModeHandler;
+import com.vaadin.flow.server.InitParameters;
 import com.vaadin.flow.server.VaadinServlet;
 import com.vaadin.flow.server.frontend.EndpointGeneratorTaskFactory;
 import com.vaadin.flow.server.frontend.FrontendUtils;
@@ -47,7 +48,7 @@ import static com.vaadin.flow.server.frontend.FrontendUtils.WEBPACK_CONFIG;
 import static com.vaadin.flow.server.frontend.NodeUpdateTestUtil.createStubNode;
 import static com.vaadin.flow.server.frontend.NodeUpdateTestUtil.createStubWebpackServer;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.any;
 
 /**
  * Base class for DevModeInitializer tests. It is an independent class so as it
@@ -60,6 +61,7 @@ public class DevModeInitializerTestBase {
     // These fields are intentionally scoped default so
     // as they can be used in package tests
     ServletContext servletContext;
+    Map<String, String> initParams;
     Set<Class<?>> classes;
     File mainPackageFile;
     File webpackFile;
@@ -68,8 +70,6 @@ public class DevModeInitializerTestBase {
     EndpointGeneratorTaskFactory endpointGeneratorTaskFactory;
     TaskGenerateConnect taskGenerateConnect;
     TaskGenerateOpenApi taskGenerateOpenApi;
-
-    ApplicationConfiguration appConfig;
 
     public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -89,9 +89,6 @@ public class DevModeInitializerTestBase {
         baseDir = temporaryFolder.getRoot().getPath();
         Boolean enablePnpm = Boolean.TRUE;
 
-        appConfig = Mockito.mock(ApplicationConfiguration.class);
-        mockApplicationConfiguration(appConfig, enablePnpm);
-
         createStubNode(false, true, enablePnpm, baseDir);
         createStubWebpackServer("Compiled", 500, baseDir);
 
@@ -99,15 +96,10 @@ public class DevModeInitializerTestBase {
         ServletRegistration vaadinServletRegistration = Mockito
                 .mock(ServletRegistration.class);
 
-        Mockito.when(servletContext
-                .getAttribute(ApplicationConfiguration.class.getName()))
-                .thenReturn(appConfig);
-
-        lookup = Mockito.mock(Lookup.class);
+        lookup = Mockito.mock(Lookup.class);;
         Mockito.when(servletContext.getAttribute(Lookup.class.getName()))
                 .thenReturn(lookup);
-        endpointGeneratorTaskFactory = Mockito
-                .mock(EndpointGeneratorTaskFactory.class);
+        endpointGeneratorTaskFactory = Mockito.mock(EndpointGeneratorTaskFactory.class);
         taskGenerateConnect = Mockito.mock(TaskGenerateConnect.class);
         taskGenerateOpenApi = Mockito.mock(TaskGenerateOpenApi.class);
         Mockito.doReturn(endpointGeneratorTaskFactory).when(lookup)
@@ -124,6 +116,14 @@ public class DevModeInitializerTestBase {
 
         Mockito.when(vaadinServletRegistration.getClassName())
                 .thenReturn(VaadinServletSubClass.class.getName());
+
+        initParams = new HashMap<>();
+        initParams.put(FrontendUtils.PROJECT_BASEDIR, baseDir);
+        initParams.put(InitParameters.SERVLET_PARAMETER_ENABLE_PNPM,
+                enablePnpm.toString());
+
+        Mockito.when(vaadinServletRegistration.getInitParameters())
+                .thenReturn(initParams);
 
         classes = new HashSet<>();
         classes.add(this.getClass());
@@ -214,25 +214,6 @@ public class DevModeInitializerTestBase {
 
     public void runDestroy() throws Exception {
         devModeInitializer.contextDestroyed(null);
-    }
-
-    private void mockApplicationConfiguration(
-            ApplicationConfiguration appConfig, boolean enablePnpm) {
-        Mockito.when(appConfig.isProductionMode()).thenReturn(false);
-        Mockito.when(appConfig.enableDevServer()).thenReturn(true);
-        Mockito.when(appConfig.isPnpmEnabled()).thenReturn(enablePnpm);
-
-        Mockito.when(appConfig.getStringProperty(Mockito.anyString(),
-                Mockito.anyString()))
-                .thenAnswer(invocation -> invocation.getArgumentAt(1,
-                        String.class));
-        Mockito.when(appConfig.getBooleanProperty(Mockito.anyString(),
-                Mockito.anyBoolean()))
-                .thenAnswer(invocation -> invocation.getArgumentAt(1,
-                        Boolean.class));
-
-        Mockito.when(appConfig.getStringProperty(FrontendUtils.PROJECT_BASEDIR,
-                null)).thenReturn(baseDir);
     }
 
     static List<URL> getClasspathURLs() {

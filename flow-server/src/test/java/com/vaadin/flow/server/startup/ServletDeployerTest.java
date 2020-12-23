@@ -37,7 +37,6 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteConfiguration;
 import com.vaadin.flow.server.InitParameters;
 import com.vaadin.flow.server.VaadinServlet;
-import com.vaadin.flow.server.frontend.FallbackChunk;
 import com.vaadin.flow.server.frontend.FrontendUtils;
 import com.vaadin.flow.server.webcomponent.WebComponentConfigurationRegistry;
 
@@ -268,23 +267,6 @@ public class ServletDeployerTest {
                 .andReturn(resourceProvider).anyTimes();
 
         replay(lookup);
-
-        ApplicationConfiguration appConfig = mock(
-                ApplicationConfiguration.class);
-
-        expect(appConfig.getPropertyNames())
-                .andReturn(Collections.emptyEnumeration()).anyTimes();
-        expect(appConfig.getStringProperty(EasyMock.anyString(),
-                EasyMock.anyString())).andReturn(null).anyTimes();
-        expect(appConfig.isProductionMode()).andReturn(false);
-        FallbackChunk chunk = mock(FallbackChunk.class);
-        expect(appConfig.getFallbackChunk()).andReturn(chunk).anyTimes();
-
-        replay(appConfig);
-
-        expect(contextMock
-                .getAttribute(ApplicationConfiguration.class.getName()))
-                        .andReturn(appConfig).anyTimes();
 
         expect(contextMock.getContextPath()).andReturn("").once();
         expect(contextMock.getClassLoader())

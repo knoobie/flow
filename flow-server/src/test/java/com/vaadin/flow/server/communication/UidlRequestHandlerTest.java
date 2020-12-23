@@ -20,7 +20,6 @@ package com.vaadin.flow.server.communication;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
-import java.util.Collections;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -36,7 +35,6 @@ import com.vaadin.flow.server.VaadinResponse;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinServletService;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.server.startup.ApplicationConfiguration;
 import com.vaadin.flow.shared.ApplicationConstants;
 
 import elemental.json.JsonObject;
@@ -70,16 +68,14 @@ public class UidlRequestHandlerTest {
 
     @Test
     public void writeSessionExpired() throws Exception {
-        ApplicationConfiguration config = Mockito
-                .mock(ApplicationConfiguration.class);
-        Mockito.when(config.getPropertyNames())
-                .thenReturn(Collections.emptyEnumeration());
+
         VaadinService service = new VaadinServletService(null,
-                new DefaultDeploymentConfiguration(config, getClass(),
+                new DefaultDeploymentConfiguration(getClass(),
                         new Properties()));
         when(request.getService()).thenReturn(service);
 
-        when(request.getParameter(ApplicationConstants.REQUEST_TYPE_PARAMETER))
+        when(request
+                .getParameter(ApplicationConstants.REQUEST_TYPE_PARAMETER))
                 .thenReturn(RequestType.UIDL.getIdentifier());
 
         boolean result = handler.handleSessionExpired(request, response);
@@ -117,8 +113,7 @@ public class UidlRequestHandlerTest {
     }
 
     @Test
-    public void should_not_modifyUidl_when_MPR_nonJavaScriptBootstrapUI()
-            throws Exception {
+    public void should_not_modifyUidl_when_MPR_nonJavaScriptBootstrapUI() throws Exception {
         JavaScriptBootstrapUI ui = null;
 
         UidlRequestHandler handler = spy(new UidlRequestHandler());
@@ -140,13 +135,13 @@ public class UidlRequestHandlerTest {
         assertTrue(v7Uidl.contains("http://localhost:9998/#!away"));
         assertTrue(v7Uidl.contains("window.location.hash = '!away';"));
 
-        assertEquals("setTimeout(() => window.history.pushState(null, '', $0))",
+        assertEquals(
+                "setTimeout(() => window.history.pushState(null, '', $0))",
                 uidl.getArray("execute").getArray(1).getString(1));
     }
 
     @Test
-    public void should_modifyUidl_when_MPR_JavaScriptBootstrapUI()
-            throws Exception {
+    public void should_modifyUidl_when_MPR_JavaScriptBootstrapUI() throws Exception {
         JavaScriptBootstrapUI ui = mock(JavaScriptBootstrapUI.class);
 
         UidlRequestHandler handler = spy(new UidlRequestHandler());
@@ -187,8 +182,7 @@ public class UidlRequestHandlerTest {
     }
 
     @Test
-    public void should_updateHash_when_v7LocationNotProvided()
-            throws Exception {
+    public void should_updateHash_when_v7LocationNotProvided() throws Exception {
         JavaScriptBootstrapUI ui = mock(JavaScriptBootstrapUI.class);
 
         UidlRequestHandler handler = spy(new UidlRequestHandler());
@@ -221,6 +215,7 @@ public class UidlRequestHandlerTest {
 
         handler.writeUidl(ui, writer, false);
 
+
         String expected = uidl.toJson();
 
         String out = writer.toString();
@@ -232,21 +227,19 @@ public class UidlRequestHandlerTest {
     }
 
     private JsonObject generateUidl(boolean withLocation, boolean withHash) {
-
-        // @formatter:off
         JsonObject uidl = JsonUtil.parse(
-                "{" +
-                "  \"syncId\": 3," +
-                "  \"clientId\": 3," +
-                "  \"changes\": []," +
-                "  \"execute\": [" +
-                "   [\"\", \"document.title = $0\"]," +
-                "   [\"\", \"setTimeout(() => window.history.pushState(null, '', $0))\"]," +
-                "   [[0, 16], \"___PLACE_FOR_V7_UIDL___\", \"$0.firstElementChild.setResponse($1)\"]," +
-                "   [1,null,[0, 16], \"return (function() { this.$server['}p']($0, true, $1)}).apply($2)\"]" +
-                "  ]," +
-                "  \"timings\": []" +
-                "}");
+            "{" +
+            "  \"syncId\": 3," +
+            "  \"clientId\": 3," +
+            "  \"changes\": []," +
+            "  \"execute\": [" +
+            "   [\"\", \"document.title = $0\"]," +
+            "   [\"\", \"setTimeout(() => window.history.pushState(null, '', $0))\"]," +
+            "   [[0, 16], \"___PLACE_FOR_V7_UIDL___\", \"$0.firstElementChild.setResponse($1)\"]," +
+            "   [1,null,[0, 16], \"return (function() { this.$server['}p']($0, true, $1)}).apply($2)\"]" +
+            "  ]," +
+            "  \"timings\": []" +
+            "}");
 
         String v7String =
             "\"syncId\": 2," +
@@ -279,11 +272,8 @@ public class UidlRequestHandlerTest {
         String hashRpc =
              "window.location.hash = '!away';";
 
-        // @formatter:on
-
         if (withLocation) {
-            v7String = v7String.replace("\"___PLACE_FOR_LOCATION_CHANGE___\"",
-                    locationChange);
+            v7String = v7String.replace("\"___PLACE_FOR_LOCATION_CHANGE___\"", locationChange);
         }
         if (withHash) {
             v7String = v7String.replace("___PLACE_FOR_HASH_RPC___", hashRpc);
@@ -292,5 +282,7 @@ public class UidlRequestHandlerTest {
         uidl.getArray("execute").getArray(2).set(1, v7String);
         return uidl;
     }
+
+
 
 }

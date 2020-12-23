@@ -16,7 +16,6 @@
 package com.vaadin.flow.server;
 
 import java.util.Collections;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -83,7 +82,17 @@ public abstract class AbstractPropertyConfiguration
      * @return String value or null if not found
      */
     public String getApplicationProperty(String parameterName) {
-        return getApplicationProperty(getProperties()::get, parameterName);
+
+        String val = properties.get(parameterName);
+        if (val != null) {
+            return val;
+        }
+
+        // Try lower case application properties for backward compatibility
+        // with 3.0.2 and earlier
+        val = properties.get(parameterName.toLowerCase());
+
+        return val;
     }
 
     /**
@@ -139,29 +148,6 @@ public abstract class AbstractPropertyConfiguration
     protected String getSystemProperty(String parameterName) {
         // version prefixed with just "vaadin."
         return System.getProperty(VAADIN_PREFIX + parameterName);
-    }
-
-    /**
-     * Gets application property value using the {@code valueProvider}.
-     * 
-     * @param valueProvider
-     *            a value provider for the property
-     * @param propertyName
-     *            the name or the parameter.
-     * @return String value or null if not found
-     */
-    protected String getApplicationProperty(
-            Function<String, String> valueProvider, String propertyName) {
-        String val = valueProvider.apply(propertyName);
-        if (val != null) {
-            return val;
-        }
-
-        // Try lower case application properties for backward compatibility with
-        // 3.0.2 and earlier
-        val = valueProvider.apply(propertyName.toLowerCase(Locale.ENGLISH));
-
-        return val;
     }
 
 }

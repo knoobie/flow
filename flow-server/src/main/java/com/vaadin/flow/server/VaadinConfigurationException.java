@@ -13,14 +13,23 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.vaadin.flow.uitest.servlet;
+package com.vaadin.flow.server;
 
-import javax.servlet.annotation.WebServlet;
+/**
+ * Exception thrown for failures in the generation of a deployment configuration
+ * object.
+ */
+public class VaadinConfigurationException extends Exception {
 
-import com.vaadin.flow.server.VaadinServletConfiguration;
-
-@WebServlet(asyncSupported = true, urlPatterns = { "/view-production/*" })
-@VaadinServletConfiguration(productionMode = true)
-public class ProductionModeViewTestServlet extends ViewTestServlet {
-
+    /**
+     * Exception constructor.
+     *
+     * @param message
+     *         exception message
+     * @param exception
+     *         exception cause
+     */
+    public VaadinConfigurationException(String message, Exception exception) {
+        super(message, exception);
+    }
 }

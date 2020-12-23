@@ -44,6 +44,7 @@ import org.mockito.Mockito;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.internal.JavaScriptBootstrapUI;
 import com.vaadin.flow.di.Lookup;
+import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.server.AppShellRegistry;
 import com.vaadin.flow.server.DevModeHandler;
@@ -54,7 +55,6 @@ import com.vaadin.flow.server.VaadinServletRequest;
 import com.vaadin.flow.server.VaadinServletService;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.frontend.FrontendUtils;
-import com.vaadin.flow.server.startup.ApplicationConfiguration;
 import com.vaadin.flow.server.startup.VaadinAppShellInitializerTest.AppShellWithPWA;
 import com.vaadin.flow.server.startup.VaadinAppShellInitializerTest.MyAppShellWithConfigurator;
 import com.vaadin.tests.util.MockDeploymentConfiguration;
@@ -448,14 +448,10 @@ public class IndexHtmlRequestHandlerTest {
         // Create a DevModeHandler
         deploymentConfiguration.setEnableDevServer(true);
         deploymentConfiguration.setProductionMode(false);
-
-        ApplicationConfiguration appConfig = Mockito
-                .mock(ApplicationConfiguration.class);
-        mockApplicationConfiguration(appConfig);
-
         DevModeHandler handler = DevModeHandler.start(0,
-                Lookup.of(appConfig, ApplicationConfiguration.class), npmFolder,
-                CompletableFuture.completedFuture(null));
+                Lookup.of(deploymentConfiguration,
+                        DeploymentConfiguration.class),
+                npmFolder, CompletableFuture.completedFuture(null));
         Method join = DevModeHandler.class.getDeclaredMethod("join");
         join.setAccessible(true);
         join.invoke(handler);
@@ -668,20 +664,5 @@ public class IndexHtmlRequestHandlerTest {
         Mockito.doAnswer(invocation -> new StringBuffer(pathInfo)).when(request)
                 .getRequestURL();
         return request;
-    }
-
-    private void mockApplicationConfiguration(
-            ApplicationConfiguration appConfig) {
-        Mockito.when(appConfig.isProductionMode()).thenReturn(false);
-        Mockito.when(appConfig.enableDevServer()).thenReturn(true);
-
-        Mockito.when(appConfig.getStringProperty(Mockito.anyString(),
-                Mockito.anyString()))
-                .thenAnswer(invocation -> invocation.getArgumentAt(1,
-                        String.class));
-        Mockito.when(appConfig.getBooleanProperty(Mockito.anyString(),
-                Mockito.anyBoolean()))
-                .thenAnswer(invocation -> invocation.getArgumentAt(1,
-                        Boolean.class));
     }
 }

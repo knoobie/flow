@@ -59,7 +59,6 @@ import com.vaadin.flow.di.Lookup;
 import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.server.communication.StreamRequestHandler;
 import com.vaadin.flow.server.frontend.FrontendUtils;
-import com.vaadin.flow.server.startup.ApplicationConfiguration;
 import com.vaadin.tests.util.MockDeploymentConfiguration;
 
 import static com.vaadin.flow.server.DevModeHandler.WEBPACK_SERVER;
@@ -82,7 +81,7 @@ import static org.mockito.Mockito.mock;
 @SuppressWarnings("restriction")
 public class DevModeHandlerTest {
 
-    private ApplicationConfiguration configuration;
+    private MockDeploymentConfiguration configuration;
 
     private HttpServer httpServer;
     private int responseStatus;
@@ -99,11 +98,6 @@ public class DevModeHandlerTest {
 
     }
 
-    public abstract static class TestAppConfig
-            implements ApplicationConfiguration {
-
-    }
-
     private String baseDir;
 
     @Before
@@ -111,8 +105,8 @@ public class DevModeHandlerTest {
         baseDir = temporaryFolder.getRoot().getAbsolutePath();
 
         npmFolder = temporaryFolder.getRoot();
-        configuration = Mockito.mock(ApplicationConfiguration.class);
-        mockApplicationConfiguration(configuration);
+        configuration = new MockDeploymentConfiguration();
+        configuration.setProductionMode(false);
 
         new File(baseDir, FrontendUtils.WEBPACK_CONFIG).createNewFile();
         createStubWebpackServer("Compiled", 100, baseDir);
@@ -222,9 +216,8 @@ public class DevModeHandlerTest {
 
     @Test
     public void should_CaptureWebpackOutput_When_Failed() throws Exception {
-        Mockito.when(configuration.getStringProperty(
-                SERVLET_PARAMETER_DEVMODE_WEBPACK_TIMEOUT, null))
-                .thenReturn("100");
+        configuration.setApplicationOrSystemProperty(
+                SERVLET_PARAMETER_DEVMODE_WEBPACK_TIMEOUT, "100");
         createStubWebpackServer("Failed to compile", 300, baseDir);
         DevModeHandler handler = DevModeHandler.start(createDevModeLookup(),
                 npmFolder, CompletableFuture.completedFuture(null));
@@ -243,7 +236,7 @@ public class DevModeHandlerTest {
     @Test
     public void shouldNot_CreateInstance_When_ProductionMode()
             throws Exception {
-        Mockito.when(configuration.isProductionMode()).thenReturn(true);
+        configuration.setProductionMode(true);
         DevModeHandler handler = DevModeHandler.start(createDevModeLookup(),
                 npmFolder, CompletableFuture.completedFuture(null));
         assertNull(handler);
@@ -252,7 +245,7 @@ public class DevModeHandlerTest {
     @Test
     public void enableDevServerFalse_shouldNotCreateInstance()
             throws Exception {
-        Mockito.when(configuration.enableDevServer()).thenReturn(false);
+        configuration.setEnableDevServer(false);
         DevModeHandler handler = DevModeHandler.start(createDevModeLookup(),
                 npmFolder, CompletableFuture.completedFuture(null));
         assertNull(handler);
@@ -407,13 +400,8 @@ public class DevModeHandlerTest {
     @Test
     public void should_GetStatsJson_From_Webpack() throws Exception {
         VaadinService vaadinService = mock(VaadinService.class);
-        DeploymentConfiguration configuration = Mockito
-                .mock(DeploymentConfiguration.class);
         Mockito.when(vaadinService.getDeploymentConfiguration())
                 .thenReturn(configuration);
-
-        Mockito.when(configuration.isProductionMode()).thenReturn(false);
-        Mockito.when(configuration.enableDevServer()).thenReturn(true);
 
         String statsContent = "{}";
         int port = prepareHttpServer(0, HTTP_OK, statsContent);
@@ -456,9 +444,9 @@ public class DevModeHandlerTest {
                     FrontendUtils.isWindows() ? "node/node.exe" : "node/node");
             FileUtils.forceMkdir(node);
 
-            Mockito.when(configuration.getBooleanProperty(
-                    InitParameters.REQUIRE_HOME_NODE_EXECUTABLE, false))
-                    .thenReturn(true);
+            configuration.setApplicationOrSystemProperty(
+                    InitParameters.REQUIRE_HOME_NODE_EXECUTABLE,
+                    Boolean.TRUE.toString());
             DevModeHandler.start(createDevModeLookup(), npmFolder,
                     CompletableFuture.completedFuture(null)).join();
         } finally {
@@ -509,8 +497,8 @@ public class DevModeHandlerTest {
 
     @Test
     public void start_twoTimes_onlyOneHandlerInstanceIsCreated() {
-        TestAppConfig conf = Mockito.spy(TestAppConfig.class);
-        mockApplicationConfiguration(conf);
+        MockDeploymentConfiguration configuration = Mockito
+                .spy(MockDeploymentConfiguration.class);
         DevModeHandler handler = DevModeHandler.start(0,
                 createDevModeLookup(configuration), npmFolder,
                 CompletableFuture.completedFuture(null));
@@ -739,23 +727,8 @@ public class DevModeHandlerTest {
         return createDevModeLookup(configuration);
     }
 
-    private Lookup createDevModeLookup(ApplicationConfiguration config) {
-        return Lookup.of(config, ApplicationConfiguration.class);
-    }
-
-    private void mockApplicationConfiguration(
-            ApplicationConfiguration appConfig) {
-        Mockito.when(appConfig.isProductionMode()).thenReturn(false);
-        Mockito.when(appConfig.enableDevServer()).thenReturn(true);
-
-        Mockito.when(appConfig.getStringProperty(Mockito.anyString(),
-                Mockito.anyString()))
-                .thenAnswer(invocation -> invocation.getArgumentAt(1,
-                        String.class));
-        Mockito.when(appConfig.getBooleanProperty(Mockito.anyString(),
-                Mockito.anyBoolean()))
-                .thenAnswer(invocation -> invocation.getArgumentAt(1,
-                        Boolean.class));
+    private Lookup createDevModeLookup(DeploymentConfiguration config) {
+        return Lookup.of(config, DeploymentConfiguration.class);
     }
 
     public static HttpServer createStubWebpackTcpListener(int port, int status,
