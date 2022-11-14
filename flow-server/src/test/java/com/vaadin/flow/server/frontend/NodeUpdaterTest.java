@@ -18,7 +18,6 @@ package com.vaadin.flow.server.frontend;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
@@ -39,7 +38,6 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaadin.experimental.Feature;
 import com.vaadin.experimental.FeatureFlags;
 import com.vaadin.flow.server.Constants;
 import com.vaadin.flow.server.frontend.scanner.ClassFinder;
@@ -67,23 +65,11 @@ public class NodeUpdaterTest {
 
     private ClassFinder finder;
 
-    private URL url;
-
-    private boolean useWebpack = false;
-
     @Before
     public void setUp() throws IOException {
-        url = new URL("file://bar");
         npmFolder = temporaryFolder.newFolder();
         generatedPath = temporaryFolder.newFolder();
         FeatureFlags featureFlags = Mockito.mock(FeatureFlags.class);
-        Mockito.when(featureFlags.isEnabled(Mockito.any(Feature.class)))
-                .thenAnswer((query) -> {
-                    if (query.getArgument(0).equals(FeatureFlags.WEBPACK)) {
-                        return useWebpack;
-                    }
-                    return false;
-                });
         finder = Mockito.mock(ClassFinder.class);
         nodeUpdater = new NodeUpdater(finder,
                 Mockito.mock(FrontendDependencies.class), npmFolder,
@@ -145,38 +131,6 @@ public class NodeUpdaterTest {
         expectedDependencies.add("mkdirp");
         expectedDependencies.add("workbox-build");
         expectedDependencies.add("transform-ast");
-        expectedDependencies.add("strip-css-comments");
-
-        Set<String> actualDependendencies = defaultDeps.keySet();
-
-        Assert.assertEquals(expectedDependencies, actualDependendencies);
-    }
-
-    @Test
-    public void getDefaultDevDependencies_includesAllDependencies_whenUsingWebpack() {
-        useWebpack = true;
-        Map<String, String> defaultDeps = nodeUpdater
-                .getDefaultDevDependencies();
-        Set<String> expectedDependencies = getCommonDevDeps();
-
-        // Webpack
-        // Webpack plugins and helpers
-        expectedDependencies.add("esbuild-loader");
-        expectedDependencies.add("html-webpack-plugin");
-        expectedDependencies.add("fork-ts-checker-webpack-plugin");
-        expectedDependencies.add("webpack");
-        expectedDependencies.add("webpack-cli");
-        expectedDependencies.add("webpack-dev-server");
-        expectedDependencies.add("compression-webpack-plugin");
-        expectedDependencies.add("extra-watch-webpack-plugin");
-        expectedDependencies.add("webpack-merge");
-        expectedDependencies.add("css-loader");
-        expectedDependencies.add("extract-loader");
-        expectedDependencies.add("lit-css-loader");
-        expectedDependencies.add("file-loader");
-        expectedDependencies.add("loader-utils");
-        expectedDependencies.add("workbox-webpack-plugin");
-        expectedDependencies.add("chokidar");
         expectedDependencies.add("strip-css-comments");
 
         Set<String> actualDependendencies = defaultDeps.keySet();

@@ -107,7 +107,6 @@ public class IndexHtmlRequestHandler extends JavaScriptBootstrapHandler {
 
         configureHiddenElementStyles(indexDocument);
 
-        showDevServerErrors(session.getService(), indexDocument);
         response.setContentType(CONTENT_TYPE_TEXT_HTML_UTF_8);
 
         VaadinContext context = session.getService().getContext();
@@ -322,9 +321,7 @@ public class IndexHtmlRequestHandler extends JavaScriptBootstrapHandler {
         String index = FrontendUtils.getIndexHtmlContent(service);
         if (index != null) {
             Document indexHtmlDocument = Jsoup.parse(index);
-            if (!getFeatureFlags(service).isEnabled(FeatureFlags.WEBPACK)) {
-                modifyIndexHtmlForVite(indexHtmlDocument);
-            }
+            modifyIndexHtmlForVite(indexHtmlDocument);
             return indexHtmlDocument;
         }
         String frontendDir = FrontendUtils

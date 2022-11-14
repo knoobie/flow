@@ -64,7 +64,6 @@ import java.util.zip.ZipOutputStream;
 import jakarta.servlet.annotation.HandlesTypes;
 
 import com.vaadin.base.devserver.ViteHandler;
-import com.vaadin.base.devserver.WebpackHandler;
 import com.vaadin.base.devserver.stats.DevModeUsageStatistics;
 import com.vaadin.base.devserver.stats.StatisticsSender;
 import com.vaadin.base.devserver.stats.StatisticsStorage;
@@ -253,7 +252,7 @@ public class DevModeInitializer implements Serializable {
         File generatedPackages = new File(builder.getGeneratedFolder(),
                 PACKAGE_JSON);
 
-        // Regenerate webpack configuration, as it may be necessary to
+        // Regenerate Vite configuration, as it may be necessary to
         // update it
         // TODO: make sure target directories are aligned with build
         // config,
@@ -345,16 +344,14 @@ public class DevModeInitializer implements Serializable {
 
         Runnable runnable = () -> {
             runNodeTasks(context, tokenFileData, tasks);
-            if (!featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
-                // For Vite, wait until a VaadinServlet is deployed so we know
-                // which frontend servlet path to use
-                if (VaadinServlet.getFrontendMapping() == null) {
-                    log().debug("Waiting for a VaadinServlet to be deployed");
-                    while (VaadinServlet.getFrontendMapping() == null) {
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                        }
+            // Wait until a VaadinServlet is deployed so we know
+            // which frontend servlet path to use
+            if (VaadinServlet.getFrontendMapping() == null) {
+                log().debug("Waiting for a VaadinServlet to be deployed");
+                while (VaadinServlet.getFrontendMapping() == null) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
                     }
                 }
             }
@@ -367,13 +364,8 @@ public class DevModeInitializer implements Serializable {
                 Lookup.of(config, ApplicationConfiguration.class));
         int port = Integer
                 .parseInt(config.getStringProperty("devServerPort", "0"));
-        if (featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
-            return new WebpackHandler(devServerLookup, port,
-                    builder.getNpmFolder(), nodeTasksFuture);
-        } else {
-            return new ViteHandler(devServerLookup, port,
-                    builder.getNpmFolder(), nodeTasksFuture);
-        }
+        return new ViteHandler(devServerLookup, port, builder.getNpmFolder(),
+                nodeTasksFuture);
     }
 
     private static boolean isEndpointServiceAvailable(Lookup lookup) {

@@ -62,11 +62,6 @@ public class TaskGenerateTsConfig extends AbstractTaskClientGenerator {
         try (InputStream tsConfStream = getClass()
                 .getResourceAsStream(TSCONFIG_JSON)) {
             String config = IOUtils.toString(tsConfStream, UTF_8);
-            if (featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
-                // webpack 4 cannot use anything newer than es2019...
-                config = config.replaceFirst("\"target\".*",
-                        "\"target\": \"es2019\",");
-            }
             return config;
         }
     }
@@ -75,8 +70,6 @@ public class TaskGenerateTsConfig extends AbstractTaskClientGenerator {
     public void execute() throws ExecutionFailedException {
         if (shouldGenerate()) {
             super.execute();
-        } else if (featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
-            ensureTarget("es2019");
         } else {
             ensureTarget(getDefaultEsTargetVersion());
         }

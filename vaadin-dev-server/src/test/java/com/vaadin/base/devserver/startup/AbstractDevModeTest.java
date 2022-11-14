@@ -3,17 +3,19 @@ package com.vaadin.base.devserver.startup;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletContext;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 import com.vaadin.base.devserver.AbstractDevServerRunner;
 import com.vaadin.base.devserver.DevModeHandlerManagerImpl;
 import com.vaadin.base.devserver.MockDeploymentConfiguration;
-import com.vaadin.base.devserver.WebpackHandler;
 import com.vaadin.flow.di.Lookup;
 import com.vaadin.flow.di.ResourceProvider;
 import com.vaadin.flow.function.DeploymentConfiguration;
@@ -28,12 +30,7 @@ import com.vaadin.flow.server.VaadinServletContext;
 import com.vaadin.flow.server.frontend.FrontendUtils;
 import com.vaadin.flow.server.startup.ApplicationConfiguration;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-import org.mockito.Mockito;
+import jakarta.servlet.ServletContext;
 
 public abstract class AbstractDevModeTest {
 
@@ -149,15 +146,6 @@ public abstract class AbstractDevModeTest {
 
     protected void waitForDevServer() {
         waitForDevServer(handler);
-    }
-
-    protected WebpackHandler startWebpack() {
-        return startWebpack(0);
-    }
-
-    protected WebpackHandler startWebpack(int port) {
-        return new WebpackHandler(lookup, port, npmFolder,
-                CompletableFuture.completedFuture(null));
     }
 
     protected static void waitForDevServer(DevModeHandler devModeHandler) {

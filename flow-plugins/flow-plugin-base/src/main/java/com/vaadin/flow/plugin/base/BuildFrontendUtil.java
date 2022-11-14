@@ -24,7 +24,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -269,14 +268,11 @@ public class BuildFrontendUtil {
                 adapter.logDebug(String.format(
                         "%n>>> Running prepare-frontend%nSystem"
                                 + ".properties:%n productionMode: %s%n"
-                                + " webpackPort: %s%n "
                                 + "project.basedir: %s%nGoal parameters:%n "
                                 + "productionMode: %s%n "
                                 + "npmFolder: %s%nToken file: " + "%s%n"
                                 + "Token content: %s%n",
                         adapter.productionMode(),
-                        System.getProperty(
-                                "vaadin.devmode.webpack.running-port"),
                         adapter.projectBaseDirectory(),
                         adapter.productionMode(), adapter.npmFolder(),
                         token.getAbsolutePath(), buildInfo.toJson()));
@@ -370,31 +366,7 @@ public class BuildFrontendUtil {
         FrontendToolsSettings settings = getFrontendToolsSettings(adapter);
         FrontendTools tools = new FrontendTools(settings);
         tools.validateNodeAndNpmVersion();
-        if (featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
-            BuildFrontendUtil.runWebpack(adapter, tools);
-        } else {
-            BuildFrontendUtil.runVite(adapter, tools);
-        }
-    }
-
-    /**
-     * Runs the Webpack build
-     *
-     * @param adapter
-     *            - the PluginAdapterBase.
-     * @param frontendTools
-     *            - frontend tools access object
-     * @throws TimeoutException
-     *             - while run webpack
-     * @throws URISyntaxException
-     *             - while parsing nodeDownloadRoot()) to URI
-     */
-    public static void runWebpack(PluginAdapterBase adapter,
-            FrontendTools frontendTools)
-            throws TimeoutException, URISyntaxException {
-        runFrontendBuildTool(adapter, frontendTools, "Webpack",
-                "webpack/bin/webpack.js",
-                frontendTools.getWebpackNodeEnvironment());
+        BuildFrontendUtil.runVite(adapter, tools);
     }
 
     /**

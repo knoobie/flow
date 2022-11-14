@@ -703,7 +703,6 @@ public class NodeTasks implements FallibleCommand {
     // without depending on when they are added.
     private static final List<Class<? extends FallibleCommand>> commandOrder =
         Collections.unmodifiableList(Arrays.asList(
-            TaskNotifyWebpackConfExistenceWhileUsingVite.class,
             TaskGeneratePackageJson.class,
             TaskGenerateIndexHtml.class,
             TaskGenerateIndexTs.class,
@@ -724,7 +723,6 @@ public class NodeTasks implements FallibleCommand {
             TaskCopyFrontendFiles.class,
             TaskCopyLocalFrontendFiles.class,
             TaskUpdateSettingsFile.class,
-            TaskUpdateWebpack.class,
             TaskUpdateVite.class,
             TaskUpdateImports.class,
             TaskUpdateThemeImport.class,
@@ -804,10 +802,8 @@ public class NodeTasks implements FallibleCommand {
         }
 
         if (builder.useLegacyV14Bootstrap) {
-            if (!featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
-                throw new IllegalStateException(
-                        V14_BOOTSTRAPPING_VITE_ERROR_MESSAGE);
-            }
+            throw new IllegalStateException(
+                    V14_BOOTSTRAPPING_VITE_ERROR_MESSAGE);
         } else {
             addBootstrapTasks(builder);
 
@@ -847,33 +843,19 @@ public class NodeTasks implements FallibleCommand {
                     builder.localResourcesFolder));
         }
 
-        if (!featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
-            String themeName = "";
-            PwaConfiguration pwa;
-            if (frontendDependencies != null) {
-                if (frontendDependencies.getThemeDefinition() != null) {
-                    themeName = frontendDependencies.getThemeDefinition()
-                            .getName();
-                }
-                pwa = frontendDependencies.getPwaConfiguration();
-            } else {
-                pwa = new PwaConfiguration();
+        String themeName = "";
+        PwaConfiguration pwa;
+        if (frontendDependencies != null) {
+            if (frontendDependencies.getThemeDefinition() != null) {
+                themeName = frontendDependencies.getThemeDefinition().getName();
             }
-            commands.add(new TaskNotifyWebpackConfExistenceWhileUsingVite(
-                    builder.npmFolder));
-            commands.add(new TaskUpdateSettingsFile(builder, themeName, pwa));
-            commands.add(new TaskUpdateVite(builder.npmFolder,
-                    builder.buildDirectory));
-        } else if (builder.enableWebpackConfigUpdate) {
-            PwaConfiguration pwaConfiguration = frontendDependencies
-                    .getPwaConfiguration();
-            commands.add(new TaskUpdateWebpack(builder.frontendDirectory,
-                    builder.npmFolder, builder.webappResourcesDirectory,
-                    builder.resourceOutputDirectory,
-                    new File(builder.generatedFolder, IMPORTS_NAME),
-                    builder.useLegacyV14Bootstrap, pwaConfiguration,
-                    builder.buildDirectory));
+            pwa = frontendDependencies.getPwaConfiguration();
+        } else {
+            pwa = new PwaConfiguration();
         }
+        commands.add(new TaskUpdateSettingsFile(builder, themeName, pwa));
+        commands.add(
+                new TaskUpdateVite(builder.npmFolder, builder.buildDirectory));
 
         if (builder.enableImportsUpdate) {
             commands.add(new TaskUpdateImports(classFinder,
@@ -908,8 +890,7 @@ public class NodeTasks implements FallibleCommand {
                 new File(builder.generatedFolder, IMPORTS_NAME),
                 buildDirectory);
         commands.add(taskGenerateIndexTs);
-        if (!builder.getFeatureFlags().isEnabled(FeatureFlags.WEBPACK)
-                && !builder.productionMode) {
+        if (!builder.productionMode) {
             commands.add(
                     new TaskGenerateViteDevMode(builder.frontendDirectory));
         }
