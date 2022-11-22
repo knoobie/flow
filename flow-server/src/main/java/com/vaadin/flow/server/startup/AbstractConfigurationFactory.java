@@ -197,6 +197,11 @@ public class AbstractConfigurationFactory implements Serializable {
                     String.valueOf(buildInfo.getBoolean(
                             InitParameters.SERVLET_PARAMETER_ENABLE_PNPM)));
         }
+        if (params.get(InitParameters.ENABLE_DEV_SERVER) == null
+                && buildInfo.hasKey(InitParameters.ENABLE_DEV_SERVER)) {
+            params.put(InitParameters.ENABLE_DEV_SERVER, String.valueOf(
+                    buildInfo.getBoolean(InitParameters.ENABLE_DEV_SERVER)));
+        }
         if (params.get(InitParameters.REQUIRE_HOME_NODE_EXECUTABLE) == null
                 && buildInfo
                         .hasKey(InitParameters.REQUIRE_HOME_NODE_EXECUTABLE)) {

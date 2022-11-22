@@ -96,6 +96,8 @@ public open class VaadinFlowPluginExtension(project: Project) {
      */
     public var pnpmEnable: Boolean = Constants.ENABLE_PNPM_DEFAULT
 
+    public var enableDevServer: Boolean = Constants.DEFAULT_ENABLE_DEV_SERVER
+
     /**
      * Whether the globally installed pnpm tool is used. By default, the
      * pinned supported version of pnpm is used, see [FrontendTools
@@ -242,6 +244,11 @@ public open class VaadinFlowPluginExtension(project: Project) {
             pnpmEnable = pnpmEnableProperty
         }
 
+        val enableDevServerProperty: Boolean? = project.getBooleanProperty(InitParameters.SERVLET_PARAMETER_ENABLE_DEV_SERVER)
+        if (enableDevServerProperty != null) {
+            enableDevServer = enableDevServerProperty
+        }
+
         val useGlobalPnpmProperty: Boolean? = project.getBooleanProperty(InitParameters.SERVLET_PARAMETER_GLOBAL_PNPM)
         if (useGlobalPnpmProperty != null) {
             useGlobalPnpm = useGlobalPnpmProperty
@@ -260,6 +267,7 @@ public open class VaadinFlowPluginExtension(project: Project) {
             "frontendResourcesDirectory=$frontendResourcesDirectory, " +
             "optimizeBundle=$optimizeBundle, " +
             "pnpmEnable=$pnpmEnable, " +
+            "enableDevServer=$enableDevServer, " +
             "useGlobalPnpm=$useGlobalPnpm, " +
             "requireHomeNodeExec=$requireHomeNodeExec, " +
             "useDeprecatedV14Bootstrapping=$useDeprecatedV14Bootstrapping, " +

@@ -140,6 +140,7 @@ internal class GradlePluginAdapter(val project: Project, private val isBeforePro
     override fun openApiJsonFile(): File = extension.openApiJsonFile
 
     override fun pnpmEnable(): Boolean = extension.pnpmEnable
+    override fun enableDevServer(): Boolean = extension.enableDevServer
 
     override fun useGlobalPnpm(): Boolean = extension.useGlobalPnpm
 

@@ -150,6 +150,14 @@ public abstract class FlowModeAbstractMojo extends AbstractMojo
     private boolean pnpmEnable;
 
     /**
+     * Defines whether a frontend development server (Vite) should be used or if
+     * a development bundle should be built.
+     */
+    @Parameter(property = InitParameters.ENABLE_DEV_SERVER, defaultValue = ""
+            + Constants.DEFAULT_ENABLE_DEV_SERVER)
+    private boolean enableDevServer;
+
+    /**
      * Instructs to use globally installed pnpm tool or the default supported
      * pnpm version.
      */
@@ -391,6 +399,11 @@ public abstract class FlowModeAbstractMojo extends AbstractMojo
     public boolean pnpmEnable() {
 
         return pnpmEnable;
+    }
+
+    @Override
+    public boolean enableDevServer() {
+        return enableDevServer;
     }
 
     @Override

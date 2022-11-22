@@ -253,6 +253,11 @@ public interface PluginAdapterBase {
     boolean pnpmEnable();
 
     /**
+     * Whether to use a frontend dev server (Vite) or a built bundle.
+     */
+    boolean enableDevServer();
+
+    /**
      * Instructs to use globally installed pnpm tool or the default supported
      * pnpm version.
      *
