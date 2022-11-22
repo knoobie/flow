@@ -101,7 +101,7 @@ public abstract class NodeUpdater implements FallibleCommand {
 
     /**
      * Base directory for {@link Constants#PACKAGE_JSON},
-     * {@link FrontendUtils#WEBPACK_CONFIG}, {@link FrontendUtils#NODE_MODULES}.
+     * {@link FrontendUtils#VITE_CONFIG}, {@link FrontendUtils#NODE_MODULES}.
      */
     protected final File npmFolder;
 
