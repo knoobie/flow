@@ -102,9 +102,12 @@ abstract class AbstractUpdateImports implements Runnable {
 
     private FeatureFlags featureFlags;
 
+    private boolean devServer;
+
     AbstractUpdateImports(File frontendDirectory, File npmDirectory,
             File generatedDirectory, File tokenFile, boolean productionMode,
-            boolean useLegacyV14Bootstrap, FeatureFlags featureFlags) {
+            boolean useLegacyV14Bootstrap, FeatureFlags featureFlags,
+            boolean devServer) {
         frontendDir = frontendDirectory;
         npmDir = npmDirectory;
         generatedDir = generatedDirectory;
@@ -112,6 +115,7 @@ abstract class AbstractUpdateImports implements Runnable {
         this.productionMode = productionMode;
         this.useLegacyV14Bootstrap = useLegacyV14Bootstrap;
         this.featureFlags = featureFlags;
+        this.devServer = devServer;
     }
 
     @Override
@@ -400,7 +404,8 @@ abstract class AbstractUpdateImports implements Runnable {
                     notFoundMessage(resourceNotFound, prefix, suffix));
         }
 
-        if (!npmNotFound.isEmpty() && getLogger().isInfoEnabled()) {
+        if (!npmNotFound.isEmpty() && getLogger().isInfoEnabled()
+                && (productionMode || devServer)) {
             getLogger().info(notFoundMessage(npmNotFound,
                     "Failed to find the following imports in the `node_modules` tree:",
                     getImportsNotFoundMessage()));

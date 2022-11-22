@@ -19,6 +19,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -43,6 +44,7 @@ import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.internal.DevModeHandler;
 import com.vaadin.flow.internal.DevModeHandlerManager;
 import com.vaadin.flow.internal.ResponseWriter;
+import com.vaadin.flow.server.frontend.FrontendUtils;
 
 import static com.vaadin.flow.server.Constants.VAADIN_MAPPING;
 import static com.vaadin.flow.server.Constants.VAADIN_WEBAPP_RESOURCES;
@@ -251,7 +253,14 @@ public class StaticFileServer implements StaticFileHandler {
             resourceUrl = vaadinService.getClassLoader()
                     .getResource(VAADIN_WEBAPP_RESOURCES + "VAADIN/static/"
                             + filenameWithPath.replaceFirst("^/", ""));
-
+        } else if (filenameWithPath.startsWith("/VAADIN/dev-bundle/")) {
+            // FIXME extra chars etc
+            File f = FrontendUtils.getFileFromProjectDir(
+                    deploymentConfiguration,
+                    filenameWithPath.substring("/VAADIN/".length()));
+            if (f != null) {
+                resourceUrl = f.toURI().toURL();
+            }
         } else if (!"/index.html".equals(filenameWithPath)) {
             // index.html needs to be handled by IndexHtmlRequestHandler
             resourceUrl = vaadinService.getClassLoader()

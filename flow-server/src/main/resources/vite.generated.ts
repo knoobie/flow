@@ -26,11 +26,16 @@ const frontendFolder = path.resolve(__dirname, settings.frontendFolder);
 const themeFolder = path.resolve(frontendFolder, settings.themeFolder);
 const statsFolder = path.resolve(__dirname, settings.statsOutput);
 const frontendBundleFolder = path.resolve(__dirname, settings.frontendBundleOutput);
+const devBundleFolder = path.resolve(__dirname, settings.devBundleOutput);
+const devBundle = settings.devBundle;
 const jarResourcesFolder = path.resolve(__dirname, settings.jarResourcesFolder);
 const generatedFlowImportsFolder = path.resolve(__dirname, settings.generatedFlowImportsFolder);
 const themeResourceFolder = path.resolve(__dirname, settings.themeResourceFolder);
+const projectPackageJsonFile = path.resolve(__dirname, "package.json");
 
-const statsFile = path.resolve(statsFolder, 'stats.json');
+const buildOutputFolder = devBundle ? devBundleFolder : frontendBundleFolder;
+
+const statsFile = path.resolve(buildOutputFolder, '..', 'config', 'stats.json');
 
 const projectStaticAssetsFolders = [
   path.resolve(__dirname, 'src', 'main', 'resources', 'META-INF', 'resources'),
@@ -186,7 +191,10 @@ function statsExtracterPlugin(): PluginOption {
         .filter((value, index, self) => self.indexOf(value) === index);
 
       mkdirSync(path.dirname(statsFile), { recursive: true });
-      writeFileSync(statsFile, JSON.stringify({ npmModules }, null, 1));
+      const projectPackageJson = JSON.parse(readFileSync(projectPackageJsonFile, {encoding: 'utf-8'}));
+      
+      const stats = { npmModules, packageJsonHash: projectPackageJson?.vaadin?.hash }
+      writeFileSync(statsFile, JSON.stringify(stats, null, 1));
     }
   };
 }
@@ -520,7 +528,8 @@ export const vaadinConfig: UserConfigFn = (env) => {
       }
     },
     build: {
-      outDir: frontendBundleFolder,
+      outDir: buildOutputFolder,
+      emptyOutDir: devBundle,
       assetsDir: 'VAADIN/build',
       rollupOptions: {
         input: {

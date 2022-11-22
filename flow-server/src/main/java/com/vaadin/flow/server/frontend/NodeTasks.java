@@ -79,6 +79,8 @@ public class NodeTasks implements FallibleCommand {
 
         private boolean runNpmInstall = false;
 
+        private boolean runDevBundleBuild = false;
+
         private Set<File> jarFiles = null;
 
         private boolean generateEmbeddableWebComponents = true;
@@ -151,6 +153,11 @@ public class NodeTasks implements FallibleCommand {
          * stuff into production.
          */
         private boolean productionMode = true;
+
+        /**
+         * Whether to run dev mode with a server or not.
+         */
+        private boolean devServer = true;
 
         /**
          * The resource folder for java resources.
@@ -313,6 +320,11 @@ public class NodeTasks implements FallibleCommand {
          */
         public Builder runNpmInstall(boolean runNpmInstall) {
             this.runNpmInstall = runNpmInstall;
+            return this;
+        }
+
+        public Builder runDevBundleBuild(boolean runDevBundleBuild) {
+            this.runDevBundleBuild = runDevBundleBuild;
             return this;
         }
 
@@ -582,6 +594,11 @@ public class NodeTasks implements FallibleCommand {
             return this;
         }
 
+        public Builder withDevServer(boolean devServer) {
+            this.devServer = devServer;
+            return this;
+        }
+
         /**
          * Sets whether it is fine to automatically update the alternate node
          * installation if installed version is older than the current default.
@@ -727,7 +744,8 @@ public class NodeTasks implements FallibleCommand {
             TaskUpdateVite.class,
             TaskUpdateImports.class,
             TaskUpdateThemeImport.class,
-            TaskCopyTemplateFiles.class
+            TaskCopyTemplateFiles.class,
+            TaskRunDevBundleBuild.class
         ));
     // @formatter:on
 
@@ -782,9 +800,19 @@ public class NodeTasks implements FallibleCommand {
                         builder.nodeVersion, builder.nodeDownloadRoot,
                         builder.useGlobalPnpm, builder.nodeAutoUpdate,
                         builder.postinstallPackages));
-
+            }
+            if (packageUpdater != null
+                    && (builder.runNpmInstall || builder.runDevBundleBuild)) {
                 commands.add(new TaskInstallWebpackPlugins(
                         new File(builder.npmFolder, builder.buildDirectory)));
+            }
+
+            if (packageUpdater != null && builder.runDevBundleBuild) {
+                commands.add(new TaskRunDevBundleBuild(packageUpdater,
+                        builder.enablePnpm, builder.requireHomeNodeExec,
+                        builder.nodeVersion, builder.nodeDownloadRoot,
+                        builder.useGlobalPnpm, builder.nodeAutoUpdate,
+                        builder.postinstallPackages));
             }
 
         }
@@ -860,7 +888,8 @@ public class NodeTasks implements FallibleCommand {
             }
             commands.add(new TaskNotifyWebpackConfExistenceWhileUsingVite(
                     builder.npmFolder));
-            commands.add(new TaskUpdateSettingsFile(builder, themeName, pwa));
+            commands.add(new TaskUpdateSettingsFile(builder, themeName, pwa,
+                    builder.devServer, builder.productionMode));
             commands.add(new TaskUpdateVite(builder.npmFolder,
                     builder.buildDirectory));
         } else if (builder.enableWebpackConfigUpdate) {
@@ -882,7 +911,8 @@ public class NodeTasks implements FallibleCommand {
                     builder.frontendDirectory, builder.tokenFile,
                     builder.tokenFileData, builder.enablePnpm,
                     builder.buildDirectory, builder.productionMode,
-                    builder.useLegacyV14Bootstrap, featureFlags));
+                    builder.useLegacyV14Bootstrap, featureFlags,
+                    builder.devServer));
 
             commands.add(new TaskUpdateThemeImport(builder.npmFolder,
                     frontendDependencies.getThemeDefinition(),
@@ -894,6 +924,7 @@ public class NodeTasks implements FallibleCommand {
                     builder.npmFolder, builder.resourceOutputDirectory,
                     builder.frontendDirectory));
         }
+
     }
 
     private void addBootstrapTasks(Builder builder) {

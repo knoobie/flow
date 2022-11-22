@@ -31,6 +31,8 @@ import com.vaadin.flow.server.PwaConfiguration;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
+import elemental.json.JsonValue;
+
 import static com.vaadin.flow.server.Constants.VAADIN_WEBAPP_RESOURCES;
 import static com.vaadin.flow.server.frontend.FrontendUtils.SERVICE_WORKER_SRC;
 import static com.vaadin.flow.server.frontend.FrontendUtils.SERVICE_WORKER_SRC_JS;
@@ -53,9 +55,14 @@ public class TaskUpdateSettingsFile implements FallibleCommand, Serializable {
     String buildDirectory;
     String themeName;
     PwaConfiguration pwaConfiguration;
+    private boolean devServer;
+    private boolean productionMode;
 
     TaskUpdateSettingsFile(NodeTasks.Builder builder, String themeName,
-            PwaConfiguration pwaConfiguration) {
+            PwaConfiguration pwaConfiguration, boolean devServer,
+            boolean productionMode) {
+        this.devServer = devServer;
+        this.productionMode = productionMode;
         this.npmFolder = builder.getNpmFolder();
         this.frontendDirectory = builder.getFrontendDirectory();
         this.jarFrontendResourcesFolder = builder
@@ -72,6 +79,8 @@ public class TaskUpdateSettingsFile implements FallibleCommand, Serializable {
             return;
 
         JsonObject settings = Json.createObject();
+        settings.put("projectBaseDir",
+                FrontendUtils.getUnixPath(npmFolder.toPath()));
         settings.put("frontendFolder",
                 FrontendUtils.getUnixPath(frontendDirectory.toPath()));
         settings.put("themeFolder", "themes");
@@ -91,11 +100,20 @@ public class TaskUpdateSettingsFile implements FallibleCommand, Serializable {
         String staticOutput = combinePath(webappResources,
                 VAADIN_STATIC_FILES_PATH);
 
+        File devBundleOutputFolder = new File(new File(npmFolder, "dev-bundle"),
+                "webapp");
+        String devBundleOutputFolderString = FrontendUtils
+                .getUnixPath(devBundleOutputFolder.toPath());
+        String devBundleStatsFolderString = FrontendUtils.getUnixPath(
+                new File(devBundleOutputFolder.getParentFile(), "stats")
+                        .toPath());
         settings.put("staticOutput",
                 FrontendUtils.getUnixPath(new File(staticOutput).toPath()));
         settings.put("generatedFolder", "generated");
         settings.put("statsOutput", statsOutput);
         settings.put("frontendBundleOutput", webappResources);
+        settings.put("devBundleOutput", devBundleOutputFolderString);
+        settings.put("devBundleStatsOutput", devBundleStatsFolderString);
         settings.put("jarResourcesFolder",
                 FrontendUtils.getUnixPath(jarFrontendResourcesFolder.toPath()));
         settings.put("generatedFlowImportsFolder",
@@ -110,6 +128,8 @@ public class TaskUpdateSettingsFile implements FallibleCommand, Serializable {
         settings.put("offlineEnabled", pwaConfiguration.isOfflineEnabled());
 
         settings.put("offlinePath", getOfflinePath());
+
+        settings.put("devBundle", !devServer && !productionMode);
 
         File settingsFile = new File(npmFolder,
                 buildDirectory + "/" + DEV_SETTINGS_FILE);

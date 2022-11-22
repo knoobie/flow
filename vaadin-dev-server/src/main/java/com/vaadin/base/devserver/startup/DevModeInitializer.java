@@ -80,6 +80,7 @@ import com.vaadin.flow.server.frontend.EndpointGeneratorTaskFactory;
 import com.vaadin.flow.server.frontend.FallbackChunk;
 import com.vaadin.flow.server.frontend.FrontendUtils;
 import com.vaadin.flow.server.frontend.NodeTasks;
+import com.vaadin.flow.server.frontend.TaskRunDevBundleBuild;
 import com.vaadin.flow.server.frontend.NodeTasks.Builder;
 import com.vaadin.flow.server.frontend.scanner.ClassFinder;
 import com.vaadin.flow.server.frontend.scanner.ClassFinder.DefaultClassFinder;
@@ -197,11 +198,7 @@ public class DevModeInitializer implements Serializable {
             log().debug("Skipping DEV MODE because PRODUCTION MODE is set.");
             return null;
         }
-        if (!config.enableDevServer()) {
-            log().debug(
-                    "Skipping DEV MODE because dev server shouldn't be enabled.");
-            return null;
-        }
+
         // This needs to be set as there is no "current service" available in
         // this call
         FeatureFlags featureFlags = FeatureFlags.get(context);
@@ -209,16 +206,16 @@ public class DevModeInitializer implements Serializable {
 
         featureFlags.setPropertiesLocation(config.getJavaResourceFolder());
 
-        String baseDir = config.getStringProperty(FrontendUtils.PROJECT_BASEDIR,
-                null);
-        if (baseDir == null) {
-            baseDir = getBaseDirectoryFallback();
+        String projectFolder = config
+                .getStringProperty(FrontendUtils.PROJECT_BASEDIR, null);
+        if (projectFolder == null) {
+            projectFolder = getBaseDirectoryFallback();
         }
 
         // Initialize the usage statistics if enabled
         if (config.isUsageStatisticsEnabled()) {
             StatisticsStorage storage = new StatisticsStorage();
-            DevModeUsageStatistics.init(baseDir, storage,
+            DevModeUsageStatistics.init(projectFolder, storage,
                     new StatisticsSender(storage));
         }
 
@@ -232,9 +229,12 @@ public class DevModeInitializer implements Serializable {
         Lookup lookupForClassFinder = Lookup.of(new DevModeClassFinder(classes),
                 ClassFinder.class);
         Lookup lookup = Lookup.compose(lookupForClassFinder, lookupFromContext);
-        Builder builder = new NodeTasks.Builder(lookup, new File(baseDir),
+        Builder builder = new NodeTasks.Builder(lookup, new File(projectFolder),
                 new File(generatedDir), new File(frontendFolder),
                 config.getBuildFolder());
+        Builder devBundleBuilder = new NodeTasks.Builder(lookup,
+                new File(projectFolder), new File(generatedDir),
+                new File(frontendFolder), config.getBuildFolder());
 
         log().info("Starting dev-mode updaters in {} folder.",
                 builder.getNpmFolder());
@@ -258,7 +258,7 @@ public class DevModeInitializer implements Serializable {
         // TODO: make sure target directories are aligned with build
         // config,
         // see https://github.com/vaadin/flow/issues/9082
-        File target = new File(baseDir, config.getBuildFolder());
+        File target = new File(projectFolder, config.getBuildFolder());
         builder.withWebpack(
                 Paths.get(target.getPath(), "classes", VAADIN_WEBAPP_RESOURCES)
                         .toFile(),
@@ -270,15 +270,16 @@ public class DevModeInitializer implements Serializable {
         if (!config.useV14Bootstrap() && isEndpointServiceAvailable(lookup)) {
             String connectJavaSourceFolder = config.getStringProperty(
                     CONNECT_JAVA_SOURCE_FOLDER_TOKEN,
-                    Paths.get(baseDir, DEFAULT_CONNECT_JAVA_SOURCE_FOLDER)
+                    Paths.get(projectFolder, DEFAULT_CONNECT_JAVA_SOURCE_FOLDER)
                             .toString());
-            String connectApplicationProperties = config.getStringProperty(
-                    CONNECT_APPLICATION_PROPERTIES_TOKEN,
-                    Paths.get(baseDir, DEFAULT_CONNECT_APPLICATION_PROPERTIES)
-                            .toString());
+            String connectApplicationProperties = config
+                    .getStringProperty(CONNECT_APPLICATION_PROPERTIES_TOKEN,
+                            Paths.get(projectFolder,
+                                    DEFAULT_CONNECT_APPLICATION_PROPERTIES)
+                                    .toString());
             String connectOpenApiJsonFile = config
                     .getStringProperty(CONNECT_OPEN_API_FILE_TOKEN,
-                            Paths.get(baseDir, config.getBuildFolder(),
+                            Paths.get(projectFolder, config.getBuildFolder(),
                                     DEFAULT_CONNECT_OPENAPI_JSON_FILE)
                                     .toString());
 
@@ -320,20 +321,23 @@ public class DevModeInitializer implements Serializable {
 
         String frontendGeneratedFolderName = config.getStringProperty(
                 PROJECT_FRONTEND_GENERATED_DIR_TOKEN,
-                Paths.get(baseDir, DEFAULT_PROJECT_FRONTEND_GENERATED_DIR)
+                Paths.get(projectFolder, DEFAULT_PROJECT_FRONTEND_GENERATED_DIR)
                         .toString());
         File frontendGeneratedFolder = new File(frontendGeneratedFolderName);
         File jarFrontendResourcesFolder = new File(frontendGeneratedFolder,
                 FrontendUtils.JAR_RESOURCES_FOLDER);
         JsonObject tokenFileData = Json.createObject();
-        NodeTasks tasks = builder.enablePackagesUpdate(true)
+
+        builder.enablePackagesUpdate(true)
                 .useByteCodeScanner(useByteCodeScanner)
                 .withFrontendGeneratedFolder(frontendGeneratedFolder)
                 .withJarFrontendResourcesFolder(jarFrontendResourcesFolder)
                 .copyResources(frontendLocations)
-                .copyLocalResources(new File(baseDir,
+                .copyLocalResources(new File(projectFolder,
                         Constants.LOCAL_FRONTEND_RESOURCES_PATH))
-                .enableImportsUpdate(true).runNpmInstall(true)
+                .enableImportsUpdate(true)
+                .runNpmInstall(config.enableDevServer())
+                .withDevServer(config.enableDevServer())
                 .populateTokenFileData(tokenFileData)
                 .withEmbeddableWebComponents(true).enablePnpm(enablePnpm)
                 .useGlobalPnpm(useGlobalPnpm)
@@ -341,11 +345,15 @@ public class DevModeInitializer implements Serializable {
                 .withProductionMode(config.isProductionMode())
                 .withPostinstallPackages(
                         Arrays.asList(additionalPostinstallPackages))
-                .build();
+                .runDevBundleBuild(!config.isProductionMode()
+                        && !config.enableDevServer());
+
+        NodeTasks tasks = builder.build();
 
         Runnable runnable = () -> {
             runNodeTasks(context, tokenFileData, tasks);
-            if (!featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
+            if (config.enableDevServer()
+                    && !featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
                 // For Vite, wait until a VaadinServlet is deployed so we know
                 // which frontend servlet path to use
                 if (VaadinServlet.getFrontendMapping() == null) {
@@ -367,7 +375,11 @@ public class DevModeInitializer implements Serializable {
                 Lookup.of(config, ApplicationConfiguration.class));
         int port = Integer
                 .parseInt(config.getStringProperty("devServerPort", "0"));
-        if (featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
+        if (!config.enableDevServer()) {
+            nodeTasksFuture.join();
+
+            return null;
+        } else if (featureFlags.isEnabled(FeatureFlags.WEBPACK)) {
             return new WebpackHandler(devServerLookup, port,
                     builder.getNpmFolder(), nodeTasksFuture);
         } else {

@@ -96,7 +96,7 @@ public class TaskUpdateViteTest {
                 temporaryFolder.newFolder("resources"));
 
         TaskUpdateSettingsFile updateSettings = new TaskUpdateSettingsFile(
-                builder, "theme", new PwaConfiguration());
+                builder, "theme", new PwaConfiguration(), true, false);
         updateSettings.execute();
         File settings = new File(temporaryFolder.getRoot(),
                 "target/" + DEV_SETTINGS_FILE);

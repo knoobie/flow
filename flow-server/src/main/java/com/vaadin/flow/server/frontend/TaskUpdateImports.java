@@ -80,6 +80,7 @@ public class TaskUpdateImports extends NodeUpdater {
     private final boolean enablePnpm;
     private final boolean productionMode;
     private final boolean useLegacyV14Bootstrap;
+    private boolean devServer;
 
     private class UpdateMainImportsFile extends AbstractUpdateImports {
         private static final String EXPORT_MODULES_DEF = "export declare const addCssBlock: (block: string, before?: boolean) => void;";
@@ -92,10 +93,11 @@ public class TaskUpdateImports extends NodeUpdater {
         UpdateMainImportsFile(ClassFinder classFinder, File frontendDirectory,
                 File npmDirectory, File generatedDirectory,
                 File fallBackImports, File tokenFile, boolean productionMode,
-                boolean useLegacyV14Bootstrap, FeatureFlags featureFlags) {
+                boolean useLegacyV14Bootstrap, FeatureFlags featureFlags,
+                boolean devServer) {
             super(frontendDirectory, npmDirectory, generatedDirectory,
                     tokenFile, productionMode, useLegacyV14Bootstrap,
-                    featureFlags);
+                    featureFlags, devServer);
             generatedFlowImports = new File(generatedDirectory, IMPORTS_NAME);
             generatedFlowDefinitions = new File(generatedDirectory,
                     IMPORTS_D_TS_NAME);
@@ -248,7 +250,7 @@ public class TaskUpdateImports extends NodeUpdater {
                 boolean useLegacyV14Bootstrap, FeatureFlags featureFlags) {
             super(frontendDirectory, npmDirectory, generatedDirectory,
                     tokenFile, productionMode, useLegacyV14Bootstrap,
-                    featureFlags);
+                    featureFlags, devServer);
             generatedFallBack = new File(generatedDirectory,
                     FrontendUtils.FALLBACK_IMPORTS_NAME);
             finder = classFinder;
@@ -365,7 +367,8 @@ public class TaskUpdateImports extends NodeUpdater {
             File npmFolder, File generatedPath, File frontendDirectory,
             File tokenFile, JsonObject tokenFileData, boolean enablePnpm,
             String buildDir, boolean productionMode,
-            boolean useLegacyV14Bootstrap, FeatureFlags featureFlags) {
+            boolean useLegacyV14Bootstrap, FeatureFlags featureFlags,
+            boolean devServer) {
         super(finder, frontendDepScanner, npmFolder, generatedPath, buildDir,
                 featureFlags);
         this.frontendDirectory = frontendDirectory;
@@ -375,6 +378,7 @@ public class TaskUpdateImports extends NodeUpdater {
         this.enablePnpm = enablePnpm;
         this.productionMode = productionMode;
         this.useLegacyV14Bootstrap = useLegacyV14Bootstrap;
+        this.devServer = devServer;
     }
 
     @Override
@@ -392,7 +396,8 @@ public class TaskUpdateImports extends NodeUpdater {
 
         UpdateMainImportsFile mainUpdate = new UpdateMainImportsFile(finder,
                 frontendDirectory, npmFolder, generatedFolder, fallBack,
-                tokenFile, productionMode, useLegacyV14Bootstrap, featureFlags);
+                tokenFile, productionMode, useLegacyV14Bootstrap, featureFlags,
+                devServer);
         mainUpdate.run();
     }
 

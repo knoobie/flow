@@ -108,7 +108,7 @@ public abstract class AbstractUpdateImportsTest extends NodeUpdateTestUtil {
                 File tokenFile, boolean productionMode,
                 FeatureFlags featureFlags) {
             super(frontendDirectory, npmDirectory, generatedPath, tokenFile,
-                    productionMode, false, featureFlags);
+                    productionMode, false, featureFlags, true);
             this.scanner = scanner;
             finder = classFinder;
         }
